@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { Order } from "./model/order";
+import { orderList } from './HTMLconstants/orderList';
 const nodemailer = require('nodemailer');
 // const cors = require('cors')({ origin: true });
 
@@ -28,7 +29,7 @@ exports.updateStock = functions.firestore
     const newOrder = <Order>snap.data();
     const stockRef = db.collection('stock').doc('main');
 
-    let batch = admin.firestore().batch();
+    const batch = admin.firestore().batch();
     stockRef.get()
       .then(doc => {
         if (!doc.exists) {
@@ -59,7 +60,7 @@ exports.updateStock = functions.firestore
 
     //EMAIL TRIGGER
 
-    let transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: 'deliveryyaartech@gmail.com',
@@ -70,14 +71,38 @@ exports.updateStock = functions.firestore
     // getting dest email by query string
     const dest = 'redgun6@gmail.com';
 
+    const bodyContent = ' ';
+
+    newOrder.order.forEach(element => {
+      const temp = orderList.pImg + element.image +
+        orderList.pName + element.name +
+        orderList.variant + element.variant +
+        orderList.qty + element.qty + ' X ' + element.price +
+        orderList.price + element.tPrice +
+        orderList.pEnd;
+      bodyContent.concat(temp);
+    });
+    let location = '';
+    if (newOrder.location !== undefined) {
+      location = 'https://www.google.com/maps/search/?api=1&query='.concat(newOrder.location.lat).concat(',').concat(newOrder.location.log);
+    }
+
     const mailOptions = {
       from: 'Delivey Yaar <deliveryyaartech@gmail.com>', // Something like: Jane Doe <janedoe@gmail.com>
       to: dest,
-      subject: 'I\'M A PICKLE!!!', // email subject
-      html: `<p style="font-size: 16px;">Pickle Riiiiiiiiiiiiiiiick!!</p>
-                      <br />
-                      <img src="https://images.prod.meredith.com/product/fc8754735c8a9b4aebb786278e7265a5/1538025388228/l/rick-and-morty-pickle-rick-sticker" />
-                  ` // email content in HTML
+      subject: 'New Order :' + newOrder.oid, // email subject
+      html: orderList.logo + 'https://i.ibb.co/7bfYbzw/logo.png' +
+        orderList.cname + newOrder.name +
+        orderList.phNo + newOrder.phone +
+        orderList.address + newOrder.address +
+        orderList.locationURL + location +
+        orderList.oid + newOrder.oid +
+        orderList.headerEnd +
+        bodyContent +
+        orderList.subTotal + newOrder.cartValue +
+        orderList.otherPrice + newOrder.shippingCharge +
+        orderList.total + newOrder.total +
+        orderList.end
     };
 
     // returning result
@@ -85,7 +110,7 @@ exports.updateStock = functions.firestore
     try {
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
-          functions.logger.info('Success email sent ');
+          functions.logger.error('Error' + JSON.stringify(error));
         }
         else {
           functions.logger.info('Message %s sent: %s', info.messageId, info.response);
