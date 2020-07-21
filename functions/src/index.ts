@@ -32,7 +32,20 @@ myOAuth2Client.setCredentials({
   refresh_token: "1//04i6spbvbEwykCgYIARAAGAQSNwF-L9Irh58mqruYs3SKxU8Ejhd7pHnKOtgr6nHsQMwh94JBZmRzIriLpFtp409fpmy1n7lDbrQ"
 });
 
+
 const myAccessToken = myOAuth2Client.getAccessToken();
+const dest = 'redgun6@gmail.com';
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    type: "OAuth2",
+    user: 'deliveryyaartech@gmail.com',
+    clientId: "441357297581-ouj0qr6besft2nl97c7777j034klduk0.apps.googleusercontent.com",
+    clientSecret: "VUC_RFeKty-acAnB33Pbu1mh",
+    refreshToken: "1//04i6spbvbEwykCgYIARAAGAQSNwF-L9Irh58mqruYs3SKxU8Ejhd7pHnKOtgr6nHsQMwh94JBZmRzIriLpFtp409fpmy1n7lDbrQ",
+    accessToken: myAccessToken //access token variable we defined earlier
+  }
+});
 
 exports.updateStock = functions.firestore
   .document('Orders/{id}')
@@ -98,20 +111,10 @@ exports.updateStock = functions.firestore
 
     //EMAIL TRIGGER
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        type: "OAuth2",
-        user: 'deliveryyaartech@gmail.com',
-        clientId: "441357297581-ouj0qr6besft2nl97c7777j034klduk0.apps.googleusercontent.com",
-        clientSecret: "VUC_RFeKty-acAnB33Pbu1mh",
-        refreshToken: "1//04i6spbvbEwykCgYIARAAGAQSNwF-L9Irh58mqruYs3SKxU8Ejhd7pHnKOtgr6nHsQMwh94JBZmRzIriLpFtp409fpmy1n7lDbrQ",
-        accessToken: myAccessToken //access token variable we defined earlier
-      }
-    });
+
 
     // getting dest email by query string
-    const dest = 'redgun6@gmail.com';
+ 
     let location = '';
     if (newOrder.location !== undefined) {
       location = 'https://www.google.com/maps/search/?api=1&query='.concat(newOrder.location.lat).concat(',').concat(newOrder.location.log);
@@ -120,13 +123,13 @@ exports.updateStock = functions.firestore
     const mailOptions = {
       from: 'Delivey Yaar <deliveryyaartech@gmail.com>', // Something like: Jane Doe <janedoe@gmail.com>
       to: dest,
-      subject: 'New Order :' + newOrder.oid, // email subject
+      subject: 'New Order : ' + newOrder.oid, // email subject
       html: orderList.logo + 'https://i.ibb.co/7bfYbzw/logo.png' +
         orderList.cname + newOrder.name +
         orderList.phNo + newOrder.phone +
         orderList.address + newOrder.address +
         orderList.locationURL + location +
-        orderList.oid + newOrder.oid +
+        orderList.oid + '  :  ' + newOrder.oid +
         orderList.headerEnd +
         body +
         orderList.subTotal + newOrder.cartValue +
@@ -137,6 +140,44 @@ exports.updateStock = functions.firestore
 
     // returning result
 
+    try {
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          functions.logger.error('Error' + JSON.stringify(error));
+        }
+        else {
+          functions.logger.info('Message %s sent: %s', info.messageId, info.response);
+        }
+
+      });
+      functions.logger.info('out from sent email');
+    } catch (error) {
+      functions.logger.error('email not sent');
+    }
+
+
+  });
+
+
+  exports.writeUS = functions.firestore
+  .document('queries/{id}')
+  .onCreate(async (snap, context) => {
+    functions.logger.log('Came inside on create');
+    const newQuerie = snap.data();
+
+    //EMAIL TRIGGER
+    const mailOptions = {
+      from: 'Delivey Yaar <deliveryyaartech@gmail.com>', // Something like: Jane Doe <janedoe@gmail.com>
+      to: dest,
+      subject: 'Help the Customer  :  ' + newQuerie.uid, // email subject
+      text: 'Hi Admin' +'\n'+'\n   '
+      + newQuerie.msg +'\n'+'\n'
+      +'    ' +newQuerie.name
+      +'\n'+'\n'+'\n'+'\n'
+      +'-----------------------------------------------------------------------------'
+    };
+
+    // returning result
     try {
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
