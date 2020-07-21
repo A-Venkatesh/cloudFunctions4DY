@@ -3,6 +3,8 @@ import * as admin from 'firebase-admin';
 import { Order } from "./model/order";
 import { orderList } from './HTMLconstants/orderList';
 const nodemailer = require('nodemailer');
+const { google } = require("googleapis");
+const OAuth2 = google.auth.OAuth2;
 // const cors = require('cors')({ origin: true });
 
 
@@ -21,12 +23,47 @@ admin.initializeApp();
 
 
 const db = admin.firestore();
+const myOAuth2Client = new OAuth2(
+  "441357297581-ouj0qr6besft2nl97c7777j034klduk0.apps.googleusercontent.com",
+  "VUC_RFeKty-acAnB33Pbu1mh",
+  "https://developers.google.com/oauthplayground"
+);
+myOAuth2Client.setCredentials({
+  refresh_token: "1//04i6spbvbEwykCgYIARAAGAQSNwF-L9Irh58mqruYs3SKxU8Ejhd7pHnKOtgr6nHsQMwh94JBZmRzIriLpFtp409fpmy1n7lDbrQ"
+});
+
+const myAccessToken = myOAuth2Client.getAccessToken();
 
 exports.updateStock = functions.firestore
   .document('Orders/{id}')
   .onCreate(async (snap, context) => {
     functions.logger.log('Came inside on create');
     const newOrder = <Order>snap.data();
+    let part = ' ';
+    let body = ' '
+    // newOrder.order.forEach(element => {
+    //   const temp = orderList.pImg + element.image +
+    //     orderList.pName + element.name +
+    //     orderList.variant + element.variant +
+    //     orderList.qty + element.qty + ' X ' + element.price +
+    //     orderList.price + element.tPrice +
+    //     orderList.pEnd;
+    //     // functions.logger.debug(temp);
+    //   bodyContent.concat(temp);
+    // });
+    for (let i = 0; i < newOrder.order.length; i++) {
+      part = body;
+      // console.log(data.products[i].product_desc); 
+      const element = newOrder.order[i];
+      const temp = orderList.pImg + element.image +
+        orderList.pName + element.name +
+        orderList.variant + element.variant +
+        orderList.qty + element.qty + ' X ' + element.price +
+        orderList.price + element.tPrice +
+        orderList.pEnd;
+      // functions.logger.debug(temp);
+      body = part.concat(temp);
+    }
     const stockRef = db.collection('stock').doc('main');
 
     const batch = admin.firestore().batch();
@@ -36,6 +73,7 @@ exports.updateStock = functions.firestore
           functions.logger.log('No such document!');
 
         } else if (doc.data()) {
+
 
           const data = doc.data();
           functions.logger.log('Document data:', data);
@@ -63,25 +101,17 @@ exports.updateStock = functions.firestore
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
+        type: "OAuth2",
         user: 'deliveryyaartech@gmail.com',
-        pass: 'sanitizer'
+        clientId: "441357297581-ouj0qr6besft2nl97c7777j034klduk0.apps.googleusercontent.com",
+        clientSecret: "VUC_RFeKty-acAnB33Pbu1mh",
+        refreshToken: "1//04i6spbvbEwykCgYIARAAGAQSNwF-L9Irh58mqruYs3SKxU8Ejhd7pHnKOtgr6nHsQMwh94JBZmRzIriLpFtp409fpmy1n7lDbrQ",
+        accessToken: myAccessToken //access token variable we defined earlier
       }
     });
 
     // getting dest email by query string
     const dest = 'redgun6@gmail.com';
-
-    const bodyContent = ' ';
-
-    newOrder.order.forEach(element => {
-      const temp = orderList.pImg + element.image +
-        orderList.pName + element.name +
-        orderList.variant + element.variant +
-        orderList.qty + element.qty + ' X ' + element.price +
-        orderList.price + element.tPrice +
-        orderList.pEnd;
-      bodyContent.concat(temp);
-    });
     let location = '';
     if (newOrder.location !== undefined) {
       location = 'https://www.google.com/maps/search/?api=1&query='.concat(newOrder.location.lat).concat(',').concat(newOrder.location.log);
@@ -98,7 +128,7 @@ exports.updateStock = functions.firestore
         orderList.locationURL + location +
         orderList.oid + newOrder.oid +
         orderList.headerEnd +
-        bodyContent +
+        body +
         orderList.subTotal + newOrder.cartValue +
         orderList.otherPrice + newOrder.shippingCharge +
         orderList.total + newOrder.total +
