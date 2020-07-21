@@ -233,8 +233,7 @@ public static readonly locationURL = ' </p>'+
 '        '+
 '        <a href="';
 	
-public static readonly oid ='<!--  insert code --> '+
-'        " rel="noopener" style="text-decoration: none; color: #2190E3;" target="_blank">'+
+public static readonly oid ='" rel="noopener" style="text-decoration: none; color: #2190E3;" target="_blank">'+
 '    <strong>'+
 '    Location <!--  insert code -->'+
 '</strong>'+
@@ -552,9 +551,9 @@ public static readonly subTotal =''+
 ''+
 '    <!-- sub total -->'+
 '    <div style="background-color:transparent;">'+
-'        <div class="block-grid two-up no-stack" style="Margin: 0 auto; min-width: 320px; max-width: 550px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: #ffffff;">'+
+'        <div class="block-grid two-up no-stack" style="Margin: 0 auto; min-width: 320px; max-width: 650px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: #ffffff;">'+
 '        <div style="border-collapse: collapse;display: table;width: 100%;background-color:#ffffff;">'+
-'        <!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:transparent;"><tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" style="width:550px"><tr class="layout-full-width" style="background-color:#ffffff"><![endif]-->'+
+'        <!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:transparent;"><tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" style="width:650px"><tr class="layout-full-width" style="background-color:#ffffff"><![endif]-->'+
 '        <!--[if (mso)|(IE)]><td align="center" width="275" style=";width:275px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;" valign="top"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 0px; padding-left: 0px; padding-top:5px; padding-bottom:5px;"><![endif]-->'+
 '        <div class="col num6" style="max-width: 320px; min-width: 275px; display: table-cell; vertical-align: top; width: 275px;">'+
 '        <div style="width:100% !important;">'+
@@ -607,9 +606,9 @@ public static readonly otherPrice = '</span></p>'+
 ''+
 '        <!-- other -->'+
 '        <div style="background-color:transparent;">'+
-'            <div class="block-grid two-up no-stack" style="Margin: 0 auto; min-width: 320px; max-width: 550px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: #ffffff;">'+
+'            <div class="block-grid two-up no-stack" style="Margin: 0 auto; min-width: 320px; max-width: 650px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: #ffffff;">'+
 '            <div style="border-collapse: collapse;display: table;width: 100%;background-color:#ffffff;">'+
-'            <!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:transparent;"><tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" style="width:550px"><tr class="layout-full-width" style="background-color:#ffffff"><![endif]-->'+
+'            <!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:transparent;"><tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" style="width:650px"><tr class="layout-full-width" style="background-color:#ffffff"><![endif]-->'+
 '            <!--[if (mso)|(IE)]><td align="center" width="275" style=";width:275px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;" valign="top"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 0px; padding-left: 0px; padding-top:5px; padding-bottom:5px;"><![endif]-->'+
 '            <div class="col num6" style="max-width: 320px; min-width: 275px; display: table-cell; vertical-align: top; width: 275px;">'+
 '            <div style="width:100% !important;">'+
@@ -661,9 +660,9 @@ public static readonly total = '</span></p>'+
 ''+
 ''+
 '            <div style="background-color:transparent;">'+
-'                <div class="block-grid two-up no-stack" style="Margin: 0 auto; min-width: 320px; max-width: 550px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: #ffffff;">'+
+'                <div class="block-grid two-up no-stack" style="Margin: 0 auto; min-width: 320px; max-width: 650px; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; background-color: #ffffff;">'+
 '                <div style="border-collapse: collapse;display: table;width: 100%;background-color:#ffffff;">'+
-'                <!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:transparent;"><tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" style="width:550px"><tr class="layout-full-width" style="background-color:#ffffff"><![endif]-->'+
+'                <!--[if (mso)|(IE)]><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:transparent;"><tr><td align="center"><table cellpadding="0" cellspacing="0" border="0" style="width:650px"><tr class="layout-full-width" style="background-color:#ffffff"><![endif]-->'+
 '                <!--[if (mso)|(IE)]><td align="center" width="275" style=";width:275px; border-top: 0px solid transparent; border-left: 0px solid transparent; border-bottom: 0px solid transparent; border-right: 0px solid transparent;" valign="top"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding-right: 0px; padding-left: 0px; padding-top:5px; padding-bottom:15px;"><![endif]-->'+
 '                <div class="col num6" style="max-width: 320px; min-width: 275px; display: table-cell; vertical-align: top; width: 275px;">'+
 '                <div style="width:100% !important;">'+
