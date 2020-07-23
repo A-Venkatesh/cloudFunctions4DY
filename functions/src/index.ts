@@ -127,7 +127,8 @@ exports.updateStock = functions.firestore
       html: orderList.logo + 'https://i.ibb.co/7bfYbzw/logo.png' +
         orderList.cname + newOrder.name +
         orderList.phNo + newOrder.phone +
-        orderList.address + newOrder.address +
+        orderList.address + '<b>Address : </b>' + newOrder.address + '<br> <b>Note</b> : ' + newOrder.note +
+        // orderList.note + newOrder.note +
         orderList.locationURL + location +
         orderList.oid + '  :  ' + newOrder.oid +
         orderList.headerEnd +
@@ -172,7 +173,7 @@ exports.updateStock = functions.firestore
       subject: 'Help the Customer  :  ' + newQuerie.uid, // email subject
       text: 'Hi Admin' +'\n'+'\n   '
       + newQuerie.msg +'\n'+'\n'
-      +'    ' +newQuerie.name
+      +'    ' +newQuerie.name +'    ' +newQuerie.phone
       +'\n'+'\n'+'\n'+'\n'
       +'-----------------------------------------------------------------------------'
     };
