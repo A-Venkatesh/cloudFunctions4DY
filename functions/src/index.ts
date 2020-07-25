@@ -77,6 +77,12 @@ exports.updateStock = functions.firestore
       // functions.logger.debug(temp);
       body = part.concat(temp);
     }
+    const countRef = db.collection('counter').doc('order');
+    countRef.update({
+      oid: admin.firestore.FieldValue.increment(1)
+    }).then(() => functions.logger.debug('this will succeed'))
+      .catch(() => functions.logger.error('increment oid failed'));
+
     const stockRef = db.collection('stock').doc('main');
 
     const batch = admin.firestore().batch();
@@ -114,7 +120,7 @@ exports.updateStock = functions.firestore
 
 
     // getting dest email by query string
- 
+
     let location = '';
     if (newOrder.location !== undefined) {
       location = 'https://www.google.com/maps/search/?api=1&query='.concat(newOrder.location.lat).concat(',').concat(newOrder.location.log);
@@ -160,7 +166,7 @@ exports.updateStock = functions.firestore
   });
 
 
-  exports.writeUS = functions.firestore
+exports.writeUS = functions.firestore
   .document('queries/{id}')
   .onCreate(async (snap, context) => {
     functions.logger.log('Came inside on create');
@@ -171,11 +177,11 @@ exports.updateStock = functions.firestore
       from: 'Delivey Yaar <deliveryyaartech@gmail.com>', // Something like: Jane Doe <janedoe@gmail.com>
       to: dest,
       subject: 'Help the Customer  :  ' + newQuerie.uid, // email subject
-      text: 'Hi Admin' +'\n'+'\n   '
-      + newQuerie.msg +'\n'+'\n'
-      +'    ' +newQuerie.name +'    ' +newQuerie.phone
-      +'\n'+'\n'+'\n'+'\n'
-      +'-----------------------------------------------------------------------------'
+      text: 'Hi Admin' + '\n' + '\n   '
+        + newQuerie.msg + '\n' + '\n'
+        + '    ' + newQuerie.name + '    ' + newQuerie.phone
+        + '\n' + '\n' + '\n' + '\n'
+        + '-----------------------------------------------------------------------------'
     };
 
     // returning result
