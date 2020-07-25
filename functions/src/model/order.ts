@@ -1,7 +1,7 @@
 import { Cart } from "./cart";
 
 export interface Order {
-    uid: string;
+  uid: string;
   oid: string;
   order: Array<Cart>;
   status: string;

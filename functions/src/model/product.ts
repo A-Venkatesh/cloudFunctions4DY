@@ -9,7 +9,7 @@ export interface Product {
     ProductKeys: string[];
     Category: string;
     SubCategory: string;
-numberOfVariants: number;
+    numberOfVariants: number;
     variants: Variant[];
 }
 export interface Variant {
@@ -22,13 +22,13 @@ export interface Variant {
     availStock: number;
     UploadedImages: ImageData[];
 }
- 
 
-export interface ImageData{
+
+export interface ImageData {
     Progress: number;
-file: string;
-fileData: {};
-fileUrl:ImgData;
+    file: string;
+    fileData: {};
+    fileUrl: ImgData;
 }
 export interface ImgData {
     data: Data;

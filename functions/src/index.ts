@@ -2,71 +2,54 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { Order } from "./model/order";
 import { orderList } from './HTMLconstants/orderList';
-const nodemailer = require('nodemailer');
-const { google } = require("googleapis");
-const OAuth2 = google.auth.OAuth2;
-// const cors = require('cors')({ origin: true });
+import * as nodemailer from 'nodemailer';
+import { google } from "googleapis";
+import { cosmo } from './cosmo_config/cosmo';
 
-
-// Start writing Firebase Functions
-// // https://firebase.google.com/docs/functions/typescript
-//
-// export const helloWorld = functions.https.onRequest((request, response) => {
-//   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
-// The Cloud Functions for Firebase SDK to create Cloud Functions and setup triggers.
-
-// The Firebase Admin SDK to access Cloud Firestore.
-// const admin = require('firebase-admin');
 admin.initializeApp();
-
-
 const db = admin.firestore();
+
+//API Authentication Details
+const OAuth2 = google.auth.OAuth2;
 const myOAuth2Client = new OAuth2(
-  "441357297581-ouj0qr6besft2nl97c7777j034klduk0.apps.googleusercontent.com",
-  "VUC_RFeKty-acAnB33Pbu1mh",
-  "https://developers.google.com/oauthplayground"
+  cosmo.clientId,
+  cosmo.clientSecret,
+  cosmo.url
 );
 myOAuth2Client.setCredentials({
-  refresh_token: "1//04i6spbvbEwykCgYIARAAGAQSNwF-L9Irh58mqruYs3SKxU8Ejhd7pHnKOtgr6nHsQMwh94JBZmRzIriLpFtp409fpmy1n7lDbrQ"
+  refresh_token: cosmo.refresh_token
 });
 
-
 const myAccessToken = myOAuth2Client.getAccessToken();
+
+//Email common
 const dest = 'redgun6@gmail.com';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     type: "OAuth2",
     user: 'deliveryyaartech@gmail.com',
-    clientId: "441357297581-ouj0qr6besft2nl97c7777j034klduk0.apps.googleusercontent.com",
-    clientSecret: "VUC_RFeKty-acAnB33Pbu1mh",
-    refreshToken: "1//04i6spbvbEwykCgYIARAAGAQSNwF-L9Irh58mqruYs3SKxU8Ejhd7pHnKOtgr6nHsQMwh94JBZmRzIriLpFtp409fpmy1n7lDbrQ",
+    clientId: cosmo.clientId,
+    clientSecret: cosmo.clientSecret,
+    refreshToken: cosmo.refresh_token,
     accessToken: myAccessToken //access token variable we defined earlier
   }
 });
 
+//On Order Create
+
 exports.updateStock = functions.firestore
   .document('Orders/{id}')
   .onCreate(async (snap, context) => {
-    functions.logger.log('Came inside on create');
+    functions.logger.debug('Came inside exports.updateStock');
     const newOrder = <Order>snap.data();
+
+    functions.logger.info('Processing order ID ' + newOrder.oid);
+    //Building HTML for order email
     let part = ' ';
-    let body = ' '
-    // newOrder.order.forEach(element => {
-    //   const temp = orderList.pImg + element.image +
-    //     orderList.pName + element.name +
-    //     orderList.variant + element.variant +
-    //     orderList.qty + element.qty + ' X ' + element.price +
-    //     orderList.price + element.tPrice +
-    //     orderList.pEnd;
-    //     // functions.logger.debug(temp);
-    //   bodyContent.concat(temp);
-    // });
+    let body = ' ';
     for (let i = 0; i < newOrder.order.length; i++) {
       part = body;
-      // console.log(data.products[i].product_desc); 
       const element = newOrder.order[i];
       const temp = orderList.pImg + element.image +
         orderList.pName + element.name +
@@ -74,40 +57,36 @@ exports.updateStock = functions.firestore
         orderList.qty + element.qty + ' X ' + element.price +
         orderList.price + element.tPrice +
         orderList.pEnd;
-      // functions.logger.debug(temp);
       body = part.concat(temp);
     }
+
+    //Incremental OID
     const countRef = db.collection('counter').doc('order');
     countRef.update({
       oid: admin.firestore.FieldValue.increment(1)
     }).then(() => functions.logger.debug('this will succeed'))
       .catch(() => functions.logger.error('increment oid failed'));
 
+    //Stock Update
     const stockRef = db.collection('stock').doc('main');
-
     const batch = admin.firestore().batch();
     stockRef.get()
       .then(doc => {
         if (!doc.exists) {
-          functions.logger.log('No such document!');
-
+          functions.logger.debug('No such document!');
         } else if (doc.data()) {
-
-
           const data = doc.data();
-          functions.logger.log('Document data:', data);
           if (data) {
             const stock = data.data;
-            functions.logger.log('Stock' + stock);
+            functions.logger.debug('Stock recurtion started');
             newOrder.order.forEach(element => {
-              functions.logger.log('Element' + element);
               stock.find((p: { id: string; value: any }) => p.id === element.id).value = Number(stock.find((p: { id: string; value: any }) => p.id === element.id).value) - Number(element.qty);
               batch.update(stockRef, { data: stock });
             });
-            functions.logger.log('COMItting');
-            batch.commit().catch(err => functions.logger.log(err))
-              .then(() => functions.logger.log('this will succeed'))
-              .catch(() => 'obligatory catch')
+            batch.commit().catch(err => functions.logger.error(err))
+              .then(() => functions.logger.debug('Batch comit complted'))
+              .catch(() => functions.logger.error('error in batch commit'))
+            functions.logger.debug('Stock recurtion ended');
           }
         }
 
@@ -116,18 +95,14 @@ exports.updateStock = functions.firestore
       });
 
     //EMAIL TRIGGER
-
-
-
     // getting dest email by query string
-
     let location = '';
     if (newOrder.location !== undefined) {
       location = 'https://www.google.com/maps/search/?api=1&query='.concat(newOrder.location.lat).concat(',').concat(newOrder.location.log);
     }
 
     const mailOptions = {
-      from: 'Delivey Yaar <deliveryyaartech@gmail.com>', // Something like: Jane Doe <janedoe@gmail.com>
+      from: 'Delivey Yaar <deliveryyaartech@gmail.com>',
       to: dest,
       subject: 'New Order : ' + newOrder.oid, // email subject
       html: orderList.logo + 'https://i.ibb.co/7bfYbzw/logo.png' +
@@ -165,16 +140,16 @@ exports.updateStock = functions.firestore
 
   });
 
-
+//Write to us Email 
 exports.writeUS = functions.firestore
   .document('queries/{id}')
   .onCreate(async (snap, context) => {
-    functions.logger.log('Came inside on create');
+    functions.logger.debug('Came inside exports.writeUS');
     const newQuerie = snap.data();
 
     //EMAIL TRIGGER
     const mailOptions = {
-      from: 'Delivey Yaar <deliveryyaartech@gmail.com>', // Something like: Jane Doe <janedoe@gmail.com>
+      from: 'Delivey Yaar <deliveryyaartech@gmail.com>',
       to: dest,
       subject: 'Help the Customer  :  ' + newQuerie.uid, // email subject
       text: 'Hi Admin' + '\n' + '\n   '

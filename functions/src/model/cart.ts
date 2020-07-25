@@ -6,11 +6,10 @@ export interface Cart {
   mrp: number;
   price: number;
   image: string;
-  variant:  string;
+  variant: string;
   qty: number;
   tMrp: number;
   tPrice: number;
   priceText: string;
   mrpText: string;
-
 }
