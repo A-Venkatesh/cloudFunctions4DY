@@ -3,8 +3,8 @@ import * as admin from 'firebase-admin';
 import { Order } from "./model/order";
 import { orderList } from './HTMLconstants/orderList';
 import * as nodemailer from 'nodemailer';
-import { google } from "googleapis";
-import { cosmo } from './cosmo_config/cosmo';
+import { google } from 'googleapis';
+import { cosmo } from './cosmo_config/DY_Gmail_API';
 
 admin.initializeApp();
 const db = admin.firestore();

@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "dy-proj",
-    "function": "dy-proj"
+    "function": "delivery-yaar",
+    "default": "delivery-yaar"
   }
 }
