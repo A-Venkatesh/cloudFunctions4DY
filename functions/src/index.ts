@@ -4,7 +4,7 @@ import { Order } from "./model/order";
 import { orderList } from './HTMLconstants/orderList';
 import * as nodemailer from 'nodemailer';
 import { google } from 'googleapis';
-import { cosmo } from './DY/Gmail_API';
+import { gmail } from './DY/Gmail_API';
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -12,12 +12,12 @@ const db = admin.firestore();
 //API Authentication Details
 const OAuth2 = google.auth.OAuth2;
 const myOAuth2Client = new OAuth2(
-  cosmo.clientId,
-  cosmo.clientSecret,
-  cosmo.url
+  gmail.clientId,
+  gmail.clientSecret,
+  gmail.url
 );
 myOAuth2Client.setCredentials({
-  refresh_token: cosmo.refresh_token
+  refresh_token: gmail.refresh_token
 });
 
 const myAccessToken = myOAuth2Client.getAccessToken();
@@ -29,9 +29,9 @@ const transporter = nodemailer.createTransport({
   auth: {
     type: "OAuth2",
     user: 'deliveryyaartech@gmail.com',
-    clientId: cosmo.clientId,
-    clientSecret: cosmo.clientSecret,
-    refreshToken: cosmo.refresh_token,
+    clientId: gmail.clientId,
+    clientSecret: gmail.clientSecret,
+    refreshToken: gmail.refresh_token,
     accessToken: myAccessToken //access token variable we defined earlier
   }
 });
