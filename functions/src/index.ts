@@ -5,6 +5,7 @@ import { orderList } from './HTMLconstants/orderList';
 import * as nodemailer from 'nodemailer';
 import { google } from 'googleapis';
 import { gmail } from './DY/Gmail_API';
+import { notification } from "./service/notification";
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -176,4 +177,55 @@ exports.writeUS = functions.firestore
     }
 
 
+  });
+
+
+// On order value change
+exports.updateOrder = functions.firestore
+  .document('Orders/{id}')
+  .onUpdate((change, context) => {
+    // Get an object representing the document
+    // e.g. {'name': 'Marie', 'age': 66}
+    const newValue = change.after.data() as Order;
+
+    // ...or the previous value before this update
+    // const previousValue = change.before.data();
+
+    // access a particular field as you would any JS property
+
+    // perform desired operations ...
+    const status = newValue.status;
+    const oid = newValue.oid;
+
+    const registrationToken = newValue.token;
+    const message = {
+      notification: {
+        title: notification.getTitle(status),
+        body: notification.getMsg(status, oid),
+        // text: "Sorry to bother you I meant, please pick an option below..",
+        // click_action: "GENERAL",
+        // badge: "1",
+        // sound: "default",
+        // showWhenInForeground: true
+      },
+      // content_available: false,
+      // data: {
+      //   foo: "bar"
+      // },
+      // priority: "High",
+      // to: registrationToken,
+      token: registrationToken
+
+    };
+
+    // Send a message to the device corresponding to the provided
+    // registration token.
+    admin.messaging().send(message)
+      .then((response) => {
+        // Response is a message ID string.
+        functions.logger.info('Successfully sent Notification:', response);
+      })
+      .catch((error) => {
+        functions.logger.error('Error sending Notification:', error);
+      });
   });

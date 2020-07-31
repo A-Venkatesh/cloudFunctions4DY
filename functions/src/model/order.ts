@@ -22,4 +22,5 @@ export interface Order {
   total: number;
   qty: number;
   save: number;
+  token: string;
 }
