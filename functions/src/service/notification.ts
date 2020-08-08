@@ -17,7 +17,9 @@ export class notification {
             case 'Completed':
                 msg = 'Order completed';
                 break;
-
+            case 'Cancel':
+                msg = 'Order canceled';
+                break;
             default:
                 msg = 'Delivery Yaar Exclusive';
                 break;
@@ -31,16 +33,19 @@ export class notification {
         let msg = ''
         switch (key) {
             case 'Order Placed':
-                msg = 'Your order '+ id +' as been successfully placed, Our executive will reach you shortly';
+                msg = 'Your order ' + id + ' as been successfully placed, Our executive will reach you shortly';
                 break;
             case 'In-Progress':
-                msg = 'Our executive processing your order id : '+id;
+                msg = 'Our executive processing your order id : ' + id;
                 break;
             case 'Out for Delivery':
                 msg = 'Our executive will reach you shortly';
                 break;
             case 'Completed':
                 msg = 'Thanks for shoping with us';
+                break;
+            case 'Cancel':
+                msg = 'Sorry for the inconvenience caused';
                 break;
 
             default:
