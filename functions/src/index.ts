@@ -24,7 +24,7 @@ myOAuth2Client.setCredentials({
 const myAccessToken = myOAuth2Client.getAccessToken();
 
 //Email common
-const dest = 'redgun6@gmail.com';
+const dest = 'service@deliveryyaar.com';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
