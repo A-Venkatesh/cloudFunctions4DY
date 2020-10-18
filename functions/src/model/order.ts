@@ -23,4 +23,6 @@ export interface Order {
   qty: number;
   save: number;
   token: string;
+  coupon: string;
+  cSave: number;
 }

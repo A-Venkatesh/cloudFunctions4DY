@@ -12,4 +12,5 @@ export interface Cart {
   tPrice: number;
   priceText: string;
   mrpText: string;
+  cat: string;
 }

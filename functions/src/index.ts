@@ -4,8 +4,9 @@ import { Order } from "./model/order";
 import { orderList } from './HTMLconstants/orderList';
 import * as nodemailer from 'nodemailer';
 import { google } from 'googleapis';
-import { gmail } from './DY/Gmail_API';
+import { gmail } from './CosmoSecure/Gmail_API';
 import { notification } from "./service/notification";
+import { Coupon } from './model/coupon';
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -24,7 +25,8 @@ myOAuth2Client.setCredentials({
 const myAccessToken = myOAuth2Client.getAccessToken();
 
 //Email common
-const dest = 'service@deliveryyaar.com';
+// const dest = 'service@deliveryyaar.com';
+const dest = 'redgun6@gmail.com';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -139,6 +141,15 @@ exports.updateStock = functions.firestore
     }
 
 
+      // Add usage on completion
+  const cUsageCol = db.collection('cUsage');
+  cUsageCol.doc().create({uid: newOrder.uid, code: newOrder.coupon}).then(res => {
+    functions.logger.info('Successfully updated the  :', res);
+  }, err => {
+    functions.logger.error('Error in apply cupon:', err);
+  });
+
+
   });
 
 //Write to us Email 
@@ -229,3 +240,138 @@ exports.updateOrder = functions.firestore
         functions.logger.error('Error sending Notification:', error);
       });
   });
+
+exports.coupon = functions.https.onCall(async (data, context) => {
+
+  const order = data.order as Order;
+  const code = order.coupon;
+  let discount = 0;
+  let errMsg = 'Success';
+  
+  //get uid
+  let uid = 'Unknow';
+  try {
+    uid = order.uid;
+  } catch (error) {
+    functions.logger.error('Error for uid', error);
+    uid = 'ErrorUser';
+  }
+
+  //get number of times code user used
+  let uCount = 0;
+  const cUsageCol = db.collection('cUsage');
+  const snapshot = await cUsageCol.where('uid', '==', uid).where('code', '==', code).get();
+  if (!snapshot.empty) {
+    snapshot.forEach(u => {
+      console.log(u.id, '=>', u.data());
+      uCount += 1;
+    });
+  }
+
+
+
+
+  //get coupon deatil
+  const couponsCol = db.collection('coupons').doc(code);
+  const doc = await couponsCol.get();
+  if (!doc.exists) {
+    functions.logger.error('No such coupon!');
+    errMsg = 'Invalid coupon';
+  } else {
+    functions.logger.debug('Document data:', doc.data());
+    //get coupon detail
+    const cdetail = doc.data() as Coupon;
+    functions.logger.debug('Document data 2:', cdetail);
+    // Check minimum cart value rule is meet
+    if (cdetail.MinCart <= order.cartValue) {
+      let products = order.order;
+      let tol = 0;
+      //check limit valid
+      if (uCount < cdetail.uLimit) {
+        // GETTING TOTAL DISCOUNTABLE VALUE
+        functions.logger.error('Error for ctype'+ cdetail.CType);
+        // all products
+        if (cdetail.CType === 'All') {
+          tol = order.cartValue;
+          functions.logger.debug('Inside All', tol);
+        } else if (cdetail.CType === 'Categories') {
+          //cat only
+          const cats = cdetail.List;
+          if (typeof (cats) === 'string') {
+            products = products.filter(p => p.cat === cats);
+
+            products.forEach(element => {
+              tol += element.price;
+            });
+          } else {
+            cats.forEach(cat => {
+              const temp = products.filter(p => p.cat === cat);
+
+              if (temp.length > 0) {
+                temp.forEach(element => {
+                  tol += element.price;
+                });
+              }
+            });
+          }
+        } else if (cdetail.CType === 'Products') {
+          //products only
+          const pros = cdetail.List;
+          if (typeof (pros) === 'string') {
+            products = products.filter(p => p.id === pros);
+
+            products.forEach(element => {
+              tol += element.price;
+            });
+          } else {
+            pros.forEach(pro => {
+              const temp = products.filter(p => p.id === pro);
+
+              if (temp.length > 0) {
+                temp.forEach(element => {
+                  tol += element.price;
+                });
+              }
+            });
+          }
+        }
+
+        functions.logger.debug('Inside All', tol);
+        // Condition for zero total check
+        if (tol !== 0) {
+          // REDUCE BASED ON DISCOUNT TYPE
+      
+          if (cdetail.DType === 'Percentage') {
+            discount = (tol / 100) * cdetail.Percent;
+            if (discount > cdetail.Amount) {
+              discount = cdetail.Amount;
+            }
+          } else if (cdetail.DType === 'Fixed') {
+            discount = cdetail.Amount;
+          } else if (cdetail.DType === 'Shipping') {
+            discount = order.shippingCharge;
+            if (!cdetail.SType) {
+              discount = cdetail.Amount;
+            }
+          }
+        } else {
+          errMsg = 'Coupon invalid for your order';
+        }
+      } else {
+        errMsg = 'Coupon usage limit exceeded';
+      }
+
+
+    } else {
+     
+      errMsg = 'Minimun cart value should be ' + cdetail.MinCart;
+    }
+  }
+
+
+
+  //Setting value
+  order.cSave = discount;
+  return {err: errMsg, data:order };
+
+});
