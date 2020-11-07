@@ -25,8 +25,8 @@ myOAuth2Client.setCredentials({
 const myAccessToken = myOAuth2Client.getAccessToken();
 
 //Email common
-// const dest = 'service@deliveryyaar.com';
-const dest = 'redgun6@gmail.com';
+const dest = 'service@deliveryyaar.com';
+// const dest = 'redgun6@gmail.com';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -36,6 +36,20 @@ const transporter = nodemailer.createTransport({
     clientSecret: gmail.clientSecret,
     refreshToken: gmail.refresh_token,
     accessToken: myAccessToken //access token variable we defined earlier
+  }
+});
+
+const transporter2 = nodemailer.createTransport({
+  host: 'smtp.yandex.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: 'delivery.yaar@yandex.com',
+    pass: 'sanitizer'
+  },
+  tls: {
+    // do not fail on invalid certs
+    rejectUnauthorized: false
   }
 });
 
@@ -63,12 +77,27 @@ exports.updateStock = functions.firestore
       body = part.concat(temp);
     }
 
+    // notify admins
+    const notiC = db.collection('notificationToken');
+    const snapshot = await notiC.get();
+    if (!snapshot.empty) {
+      snapshot.forEach(u => {
+        console.log(u.id, '=>', u.data());
+        notification.createNewOrderNotification(newOrder, u.data().tokens).then((response) => {
+          functions.logger.info(newOrder.oid + ' Successfully sent Notification:', response);
+        })
+          .catch((error) => {
+            functions.logger.error(newOrder.oid + 'Error sending Notification:', error);
+          });;
+      });
+    }
+
     //Incremental OID
     const countRef = db.collection('counter').doc('order');
     countRef.update({
       oid: admin.firestore.FieldValue.increment(1)
     }).then(() => functions.logger.debug('this will succeed'))
-      .catch(() => functions.logger.error('increment oid failed'));
+      .catch(() => functions.logger.error(newOrder.oid + ' increment oid failed'));
 
     //Stock Update
     const stockRef = db.collection('stock').doc('main');
@@ -76,25 +105,29 @@ exports.updateStock = functions.firestore
     stockRef.get()
       .then(doc => {
         if (!doc.exists) {
-          functions.logger.debug('No such document!');
+          functions.logger.error('No such document!');
         } else if (doc.data()) {
           const data = doc.data();
-          if (data) {
-            const stock = data.data;
-            functions.logger.debug('Stock recurtion started');
-            newOrder.order.forEach(element => {
-              stock.find((p: { id: string; value: any }) => p.id === element.id).value = Number(stock.find((p: { id: string; value: any }) => p.id === element.id).value) - Number(element.qty);
-              batch.update(stockRef, { data: stock });
-            });
-            batch.commit().catch(err => functions.logger.error(err))
-              .then(() => functions.logger.debug('Batch comit complted'))
-              .catch(() => functions.logger.error('error in batch commit'))
-            functions.logger.debug('Stock recurtion ended');
+          try {
+            if (data) {
+              const stock = data.data;
+              functions.logger.debug('Stock recurtion started');
+              newOrder.order.forEach(element => {
+                stock.find((p: { id: string; value: any }) => p.id === element.id).value = Number(stock.find((p: { id: string; value: any }) => p.id === element.id).value) - Number(element.qty);
+                batch.update(stockRef, { data: stock });
+              });
+              batch.commit().catch(err => functions.logger.error(err))
+                .then(() => functions.logger.debug('Batch comit complted'))
+                .catch(() => functions.logger.error('error in batch commit'))
+              functions.logger.debug('Stock recurtion ended');
+            }
+          } catch (error) {
+            functions.logger.error('Stock update recurtion Failed', error);
           }
         }
 
       }).catch(err => {
-        functions.logger.log('Error getting document', err);
+        functions.logger.error('Error getting document', err);
       });
 
     //EMAIL TRIGGER
@@ -103,52 +136,83 @@ exports.updateStock = functions.firestore
     if (newOrder.location !== undefined) {
       location = 'https://www.google.com/maps/search/?api=1&query='.concat(newOrder.location.lat).concat(',').concat(newOrder.location.log);
     }
+    let discountHTML = '';
+    let couponHTML = '';
+    if (newOrder.cSave > 0) {
+      couponHTML = '<br> <b> Coupon Applied </b> : ' + newOrder.coupon;
+       discountHTML = orderList.discountS + newOrder.cSave + orderList.discountE;
+    }
 
     const mailOptions = {
       from: 'Delivey Yaar <deliveryyaartech@gmail.com>',
       to: dest,
       subject: 'New Order : ' + newOrder.oid, // email subject
+      // attachments: [
+      //   {   // utf-8 string as an attachment
+      //       filename: 'copy.html',
+      //       content: 'hello world!'
+      //   }],
       html: orderList.logo + 'https://i.ibb.co/7bfYbzw/logo.png' +
         orderList.cname + newOrder.name +
         orderList.phNo + newOrder.phone +
         orderList.address + '<b>Address : </b>' + newOrder.address + '<br> <b>Note</b> : ' + newOrder.note +
+        couponHTML +
         // orderList.note + newOrder.note +
         orderList.locationURL + location +
         orderList.oid + '  :  ' + newOrder.oid +
         orderList.headerEnd +
         body +
         orderList.subTotal + newOrder.cartValue +
-        orderList.otherPrice + newOrder.shippingCharge +
+        orderList.otherPrice + 
+        discountHTML +
+        orderList.ship + newOrder.shippingCharge +
         orderList.total + newOrder.total +
         orderList.end
     };
 
     // returning result
+    // mailOptions.attachments = [
+    //   {   // utf-8 string as an attachment
+    //       filename: 'copy.html',
+    //       content: mailOptions.html
+    //   }]
+    transporter.sendMail(mailOptions, (err, info) => {
+      try {
+        if (err) {
+          functions.logger.error(newOrder.oid + ' Gmail Error' + JSON.stringify(err));
+          throw new Error("failed in gmail");
 
-    try {
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          functions.logger.error('Error' + JSON.stringify(error));
         }
         else {
           functions.logger.info('Message %s sent: %s', info.messageId, info.response);
+          // throw new Error("failed in yadex");
         }
+      } catch (error) {
+        mailOptions.from = 'Delivey Yaar <delivery.yaar@yandex.com>';
+        transporter2.sendMail(mailOptions, (errors, infos) => {
+          if (errors) {
+            functions.logger.error(newOrder.oid + 'Yadex Error' + JSON.stringify(error));
 
-      });
-      functions.logger.info('out from sent email');
-    } catch (error) {
-      functions.logger.error('email not sent');
-    }
+          }
+          else {
+            functions.logger.info('Message %s sent: %s', infos.messageId, infos.response);
+          }
+
+        });
+      }
+
+    });
+    functions.logger.debug('out from sent email');
 
 
-      // Add usage on completion
-  const cUsageCol = db.collection('cUsage');
-  cUsageCol.doc().create({uid: newOrder.uid, code: newOrder.coupon}).then(res => {
-    functions.logger.info('Successfully updated the  :', res);
-  }, err => {
-    functions.logger.error('Error in apply cupon:', err);
-  });
 
+    // Add usage on completion
+    const cUsageCol = db.collection('cUsage');
+    cUsageCol.doc().create({ uid: newOrder.uid, code: newOrder.coupon }).then(res => {
+      functions.logger.info('Successfully updated the  Cupon :', res);
+    }, err => {
+      functions.logger.error('Error in apply cupon:', err);
+    });
 
   });
 
@@ -247,7 +311,7 @@ exports.coupon = functions.https.onCall(async (data, context) => {
   const code = order.coupon;
   let discount = 0;
   let errMsg = 'Success';
-  
+
   //get uid
   let uid = 'Unknow';
   try {
@@ -289,7 +353,7 @@ exports.coupon = functions.https.onCall(async (data, context) => {
       //check limit valid
       if (uCount < cdetail.uLimit) {
         // GETTING TOTAL DISCOUNTABLE VALUE
-        functions.logger.error('Error for ctype'+ cdetail.CType);
+        functions.logger.debug('On for ctype' + cdetail.CType);
         // all products
         if (cdetail.CType === 'All') {
           tol = order.cartValue;
@@ -318,14 +382,29 @@ exports.coupon = functions.https.onCall(async (data, context) => {
           //products only
           const pros = cdetail.List;
           if (typeof (pros) === 'string') {
-            products = products.filter(p => p.id === pros);
-
+            products = products.filter(p => p.fID === pros);
+            if (pros.search('_') > -1) {
+              const vID = Number(pros.substr(pros.indexOf('_') + 1, pros.length));
+              products = products.filter(p => p.fID === pros && p.vID === vID);
+              functions.logger.info('FID   |   VID', pros + '   |  ' + vID);
+            } else {
+              products = products.filter(p => p.fID === pros);
+              functions.logger.info('FID  = ', pros);
+            }
             products.forEach(element => {
               tol += element.price;
             });
           } else {
             pros.forEach(pro => {
-              const temp = products.filter(p => p.id === pro);
+              let temp;
+              if (pro.search('_') > -1) {
+                const vID = Number(pro.substr(pro.indexOf('_') + 1, pro.length));
+                temp = products.filter(p => p.fID === pro && p.vID === vID);
+                functions.logger.info('FID   |   VID', pro + '   |  ' + vID);
+              } else {
+                temp = products.filter(p => p.fID === pro);
+                functions.logger.info('FID  = ', pro);
+              }
 
               if (temp.length > 0) {
                 temp.forEach(element => {
@@ -336,13 +415,13 @@ exports.coupon = functions.https.onCall(async (data, context) => {
           }
         }
 
-        functions.logger.debug('Inside All', tol);
+        functions.logger.debug('zero total check', tol);
         // Condition for zero total check
         if (tol !== 0) {
           // REDUCE BASED ON DISCOUNT TYPE
-      
+
           if (cdetail.DType === 'Percentage') {
-            discount = (tol / 100) * cdetail.Percent;
+            discount = (cdetail.Percent / 100) * tol ;
             if (discount > cdetail.Amount) {
               discount = cdetail.Amount;
             }
@@ -363,15 +442,15 @@ exports.coupon = functions.https.onCall(async (data, context) => {
 
 
     } else {
-     
+
       errMsg = 'Minimun cart value should be ' + cdetail.MinCart;
     }
   }
 
 
-
+  functions.logger.debug('Coupon completed', discount);
   //Setting value
-  order.cSave = discount;
-  return {err: errMsg, data:order };
+  order.cSave = Number(Number(discount).toFixed(2));
+  return { err: errMsg, data: order };
 
 });
