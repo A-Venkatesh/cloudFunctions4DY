@@ -25,8 +25,8 @@ myOAuth2Client.setCredentials({
 const myAccessToken = myOAuth2Client.getAccessToken();
 
 //Email common
-const dest = 'service@deliveryyaar.com';
-// const dest = 'redgun6@gmail.com';
+// const dest = 'service@deliveryyaar.com';
+const dest = 'redgun6@gmail.com';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -114,6 +114,7 @@ exports.updateStock = functions.firestore
               functions.logger.debug('Stock recurtion started');
               newOrder.order.forEach(element => {
                 stock.find((p: { id: string; value: any }) => p.id === element.id).value = Number(stock.find((p: { id: string; value: any }) => p.id === element.id).value) - Number(element.qty);
+                functions.logger.debug('8220426711',stock );
                 batch.update(stockRef, { data: stock });
               });
               batch.commit().catch(err => functions.logger.error(err))
